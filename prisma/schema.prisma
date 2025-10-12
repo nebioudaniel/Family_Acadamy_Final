@@ -1,0 +1,59 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum for User Roles
+enum Role {
+  ADMIN
+  TEACHER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  hashedPassword     String // Hashed password
+  role          Role      @default(TEACHER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relationship to Courses
+  courses       Course[]
+}
+
+model Course {
+  id             String    @id @default(cuid())
+  title          String
+  description    String
+  videoUrl       String? // Assuming a URL or path to a video file
+  notes          String? // Course notes (e.g., Markdown content)
+  
+  // Publishing Status
+  status         CourseStatus @default(DRAFT)
+  publishedAt    DateTime? // Actual publish date
+  scheduledAt    DateTime? // For the 'Set Timer' option
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  // Relationship to Teacher
+  teacherId      String
+  teacher        User      @relation(fields: [teacherId], references: [id],onDelete: Cascade)
+  
+  @@index([teacherId])
+  @@index([status])
+}
+
+// Enum for Course Status
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+}
