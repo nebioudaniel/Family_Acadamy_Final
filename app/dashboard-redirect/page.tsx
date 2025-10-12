@@ -6,20 +6,21 @@ export default async function DashboardRedirectPage() {
   const session = await auth()
 
   if (!session || !session.user) {
-    // Should not happen after a successful signIn, but safety first
+    // Safety check for unauthenticated users
     return redirect("/login")
   }
 
-  const { role } = session.user
+  // NOTE: This requires your session callback (Step 1, Fix A) to properly inject 'role'.
+  const { role } = session.user 
 
   if (role === "ADMIN") {
     return redirect("/admin")
   }
 
   if (role === "TEACHER") {
-    return redirect("/teacher/courses")
+    return redirect("/teacher/courses") // Redirect to the teacher dashboard entry point
   }
 
-  // Default redirect for STUDENTS (if you implement that role fully) or other users
+  // Default redirect (e.g., Student/Public user)
   return redirect("/courses")
 }
