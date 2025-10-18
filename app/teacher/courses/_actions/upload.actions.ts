@@ -1,5 +1,3 @@
-// app/teacher/courses/_actions/upload.actions.ts
-
 "use server";
 
 import { v2 as cloudinary } from "cloudinary";
@@ -11,7 +9,6 @@ cloudinary.config({
   secure: true,
 });
 
-// 🚨 FIX 1: ADD 'export'
 export interface SignedUploadSuccess {
   success: true;
   timestamp: number;
@@ -22,15 +19,12 @@ export interface SignedUploadSuccess {
   error: null;
 }
 
-// 🚨 FIX 2: ADD 'export'
 export interface SignedUploadFailure {
   success: false;
   error: string;
 }
 
-// 🚨 FIX 3: ADD 'export'
 export type SignedUploadResult = SignedUploadSuccess | SignedUploadFailure;
-
 
 export async function getSignedUploadSignature(
   fileName: string
@@ -45,12 +39,12 @@ export async function getSignedUploadSignature(
 
     const options = {
       public_id,
-      timestamp: Math.round(Date.now() / 1000), 
+      timestamp: Math.round(Date.now() / 1000),
       folder: FOLDER,
       tags: TAGS,
-      resource_type: "video",
     };
 
+    // ✅ Only include Cloudinary-allowed params in signature
     const signature = cloudinary.utils.api_sign_request(
       options,
       process.env.CLOUDINARY_API_SECRET as string
