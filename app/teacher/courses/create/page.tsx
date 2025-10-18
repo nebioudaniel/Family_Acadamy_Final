@@ -1,5 +1,3 @@
-// app/teacher/courses/create/page.tsx
-
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -12,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from 'sonner'
 import { createCourse } from '../_actions/course.actions'
-import { getSignedUploadSignature } from '../_actions/upload.actions' 
+// 🚨 CHANGE 1: Import the function AND the required type for safe handling
+import { getSignedUploadSignature, SignedUploadResult } from '../_actions/upload.actions' 
 import { Save, Clock, BookOpen, Video, FileText, Bold, Italic, Underline, List, Heading, Link, Pilcrow, UploadCloud, CheckCircle, XCircle, LucideIcon, Type, Minus, Check, ChevronsUpDown } from 'lucide-react'
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -388,17 +387,26 @@ export default function CreateCoursePage() {
         // Use a clean, consistent file name for the server.
         const cleanFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
         
-        const signatureResult = await getSignedUploadSignature(cleanFileName);
+        // Use the explicit type definition from the Server Action
+        const signatureResult: SignedUploadResult = await getSignedUploadSignature(cleanFileName);
 
+        // 🚨 FIX: Type Guard to check for success. If successful, TypeScript guarantees 
+        // that 'timestamp', 'public_id', etc., are defined.
         if (!signatureResult.success) {
             toast.dismiss(toastId);
-            toast.error(signatureResult.error || "Failed to prepare video upload. Check server logs.");
+            toast.error(signatureResult.error); // Error is guaranteed to be a string here
             return;
         }
 
-        // The public_id returned here now includes the folder name, which is correct
         const { timestamp, public_id, signature, cloudName, apiKey } = signatureResult;
         
+        // Final safety check for missing environment variables on the server (which caused previous issues)
+        if (!cloudName || !apiKey) {
+            toast.dismiss(toastId);
+            toast.error("Cloudinary environment variables not configured on the server.");
+            return;
+        }
+
         // -----------------------------------------------------
         // STEP 2: Client uploads the large file DIRECTLY to Cloudinary
         // -----------------------------------------------------
@@ -406,19 +414,20 @@ export default function CreateCoursePage() {
         
         const uploadFormData = new FormData();
         uploadFormData.append('file', fileToUpload);
-        uploadFormData.append('api_key', apiKey as string);
+        // apiKey is guaranteed to be a string now
+        uploadFormData.append('api_key', apiKey); 
+        
+        // 🚨 FIX: timestamp is guaranteed to be a number, resolving the compile error
         uploadFormData.append('timestamp', timestamp.toString());
         
-        // 🚨 CRITICAL: Use the exact public_id returned by the server, which includes the folder name
+        // CRITICAL: Use the exact public_id returned by the server
         uploadFormData.append('public_id', public_id); 
         
         uploadFormData.append('signature', signature);
-        // 🚨 CRITICAL: These MUST match the options passed to api_sign_request on the server
+        // CRITICAL: These MUST match the options passed to api_sign_request on the server
         uploadFormData.append('folder', 'course_videos'); 
         uploadFormData.append('tags', 'nextjs-course-video'); 
         
-        // NOTE: We don't need to send 'resource_type' or 'max_bytes' because they are only needed for the signing process on the server, not the upload post request itself.
-
         toast.loading("Uploading video (this may take a minute)...", { id: toastId });
         
         const uploadResponse = await fetch(uploadUrl, {
