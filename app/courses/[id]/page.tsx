@@ -1,4 +1,4 @@
-// app/courses/[id]/page.tsx (Final Mobile Spacing Fix)
+// app/courses/[id]/page.tsx (Fixed for Cloudinary URLs)
 import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import Link from "next/link" 
@@ -12,25 +12,19 @@ interface CourseDetailPageProps {
   }
 }
 
-// Function to determine the correct video rendering method (Unchanged)
+// 🚨 FIX: Updated function to determine the correct video rendering method
 const getVideoSource = (url: string | null | undefined): { type: 'iframe' | 'video' | null, src: string | null } => {
   if (!url) return { type: null, src: null };
 
-  // 1. Check for Direct Public Path
-  if (url.startsWith('/videos/')) {
-    return { type: 'video', src: url }; 
-  }
-
-  // 2. Check for External Embed (YouTube, Vimeo, etc.)
+  // 1. Check for External Embed (YouTube, Vimeo, etc.)
   try {
     const urlObj = new URL(url);
+    
+    // Check for YouTube Embed (Unchanged)
     if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
       let videoId = urlObj.searchParams.get('v');
       if (!videoId && urlObj.pathname.length > 1) {
-          // .pop() returns string | undefined. We must check for it.
           const potentialVideoId = urlObj.pathname.split('/').pop(); 
-          
-          // 🎯 CRITICAL FIX: Only assign if potentialVideoId is not undefined/empty
           if (potentialVideoId) {
              videoId = potentialVideoId;
           }
@@ -38,15 +32,28 @@ const getVideoSource = (url: string | null | undefined): { type: 'iframe' | 'vid
       const embedSrc = videoId ? `https://www.youtube.com/embed/${videoId}` : null;
       return { type: 'iframe', src: embedSrc };
     }
-    // Fallback for other external URLs that might work in an iframe
+    
+    // 2. 🌟 NEW: Check for Cloudinary or other standard external video URLs
+    // Cloudinary URLs typically use 'res.cloudinary.com' and are direct video files.
+    if (urlObj.hostname.includes('cloudinary.com') || 
+        // We assume any standard HTTPS link that isn't YouTube is a direct video file.
+        (urlObj.protocol === 'https:' && url.match(/\.(mp4|mov|webm)$/i))
+    ) {
+        return { type: 'video', src: url };
+    }
+
+    // Fallback for generic external URLs that might work in an iframe
     if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
         return { type: 'iframe', src: url };
     }
     
     return { type: null, src: null };
-  } catch (_e) { // 🌟 WARNING FIX: Replaced 'e' with '_e' since it is unused
-    if (url.startsWith('/')) {
-        return { type: 'video', src: url };
+
+  } catch (_e) { 
+    // This catches invalid URLs or local paths from the old system that might still be in the DB.
+    if (url.startsWith('/videos/')) {
+        // Fallback for old local files, though this will no longer work on Vercel
+        return { type: 'video', src: url }; 
     }
     return { type: null, src: null };
   }
@@ -132,13 +139,15 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
                 ></iframe>
             )}
 
-            {/* Renders an HTML5 video player for our uploaded files */}
+            {/* Renders an HTML5 video player for our uploaded files (Cloudinary/Direct) */}
             {videoContent.type === 'video' && (
                 <video
                     className="w-full h-full rounded-lg absolute top-0 left-0 object-cover" 
+                    // 🚨 CRITICAL FIX: The src is now the Cloudinary URL
                     src={videoContent.src}
                     controls
                     preload="metadata"
+                    // Note: If you want a poster, you can use Cloudinary's auto-generated thumbnail here.
                     poster="/images/video-poster.jpg" 
                 >
                     Your browser does not support the video tag.
@@ -167,7 +176,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
           <Card>
             <CardContent 
                 className="p-4 md:p-6 bg-gray-50" 
-                // 🌟 FIX: Use dangerouslySetInnerHTML to render the rich text HTML content
+                // Using dangerouslySetInnerHTML to render the rich text HTML content (Unchanged)
                 dangerouslySetInnerHTML={{ __html: course.notes }} 
             />
           </Card>

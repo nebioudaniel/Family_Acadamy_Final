@@ -1,3 +1,5 @@
+// app/teacher/courses/create/page.tsx
+
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -10,26 +12,24 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from 'sonner'
 import { createCourse } from '../_actions/course.actions'
+import { getSignedUploadSignature } from '../_actions/upload.actions' 
 import { Save, Clock, BookOpen, Video, FileText, Bold, Italic, Underline, List, Heading, Link, Pilcrow, UploadCloud, CheckCircle, XCircle, LucideIcon, Type, Minus, Check, ChevronsUpDown } from 'lucide-react'
 
-// Assuming these are available from your components directory
-// Make sure you have these installed: npx shadcn-ui@latest add popover command button
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils" 
 
-// Define the structure for Combobox options
+// Define the structure for Combobox options (RichTextEditor related, unchanged)
 type ComboboxOption = {
     value: string; // The value passed to document.execCommand
     label: string;
 };
 
-// --- Combobox Toolbar Component (Corrected) ---
+// --- ToolbarCombobox Component (Unchanged) ---
 const ToolbarCombobox = ({ options, placeholder, command, applyFormatting }: { 
     options: ComboboxOption[]; 
     placeholder: string; 
     command: string; 
-    // 🌟 CORRECTED: Now accepting applyFormatting from the parent
     applyFormatting: (command: string, value: string | undefined) => void; 
 }) => {
     const [open, setOpen] = useState(false);
@@ -64,7 +64,6 @@ const ToolbarCombobox = ({ options, placeholder, command, applyFormatting }: {
                                     key={option.value}
                                     value={option.label}
                                     onSelect={() => {
-                                        // 🌟 CORRECTED: Use the passed applyFormatting function
                                         applyFormatting(command, option.value); 
                                         
                                         setValue(option.value);
@@ -88,17 +87,15 @@ const ToolbarCombobox = ({ options, placeholder, command, applyFormatting }: {
     );
 }
 
-// --- RichTextEditor component continues ---
+// --- RichTextEditor component (Unchanged) ---
 const RichTextEditor = ({ name, placeholder }: { name: string, placeholder: string }) => {
     const [content, setContent] = useState('');
-    // The main reference to the editable content area
     const contentRef = useRef<HTMLDivElement>(null); 
     const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
     const [linkUrl, setLinkUrl] = useState('');
     const [linkText, setLinkText] = useState('');
     const selectionRangeRef = useRef<Range | null>(null);
     
-    // State to track all active formatting for visual feedback
     const [currentStyle, setCurrentStyle] = useState({ 
         isBold: false, 
         isItalic: false, 
@@ -106,7 +103,6 @@ const RichTextEditor = ({ name, placeholder }: { name: string, placeholder: stri
         isList: false,
     });
 
-    // Font Data Definitions
     const FONT_SIZES: ComboboxOption[] = [
         { label: 'Small', value: '1' },
         { label: 'Normal', value: '3' }, 
@@ -121,26 +117,20 @@ const RichTextEditor = ({ name, placeholder }: { name: string, placeholder: stri
     ];
 
 
-    // Handler to update state on input events (Unchanged)
     const handleInput = useCallback(() => {
         const htmlContent = contentRef.current?.innerHTML || '';
         setContent(htmlContent);
     }, []);
     
-    // Logic to apply formatting (Unchanged)
-    // 🌟 NOTE: This function must be defined here so we can pass it to ToolbarCombobox
     const applyFormatting = useCallback((command: string, value: string | undefined = undefined) => {
-        // 🌟 CRITICAL FIX: Ensure focus is explicitly set before running execCommand
-        // This makes sure the command is applied to the selected area.
         if (contentRef.current) {
             contentRef.current.focus();
         }
         document.execCommand(command, false, value);
         handleInput();
         updateStyleState();
-    }, [handleInput]); // Added handleInput as dependency
+    }, [handleInput]); 
     
-    // Function to check the style of the current selection (Unchanged)
     const updateStyleState = useCallback(() => {
         if (!document.queryCommandSupported('bold')) return;
         const isBold = document.queryCommandState('bold');
@@ -150,7 +140,6 @@ const RichTextEditor = ({ name, placeholder }: { name: string, placeholder: stri
         setCurrentStyle({ isBold, isItalic, isUnderline, isList });
     }, []);
 
-    // Add event listeners to update the style state (Unchanged)
     useEffect(() => {
         const editorElement = contentRef.current;
         const handleSelectionChangeOrMouseUp = () => {
@@ -171,7 +160,6 @@ const RichTextEditor = ({ name, placeholder }: { name: string, placeholder: stri
         };
     }, [updateStyleState]);
 
-    // Link handlers (Unchanged)
     const handleLinkClick = () => {
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
@@ -209,14 +197,12 @@ const RichTextEditor = ({ name, placeholder }: { name: string, placeholder: stri
         selectionRangeRef.current = null;
     };
 
-    // Initialize contentEditable (Unchanged)
     useEffect(() => {
         if (contentRef.current && !contentRef.current.innerHTML) {
             contentRef.current.innerHTML = '';
         }
     }, []);
 
-    // Toolbar Button Component (Unchanged)
     const ToolbarButton = ({ icon: Icon, onClick, title, isActive = false }: { icon: LucideIcon, onClick: () => void, title: string, isActive?: boolean }) => (
         <Button 
             type="button" 
@@ -289,14 +275,12 @@ const RichTextEditor = ({ name, placeholder }: { name: string, placeholder: stri
                     
                     {/* Font Selection Controls - SHADCN COMBOBOX */}
                     <div className='flex items-center space-x-1 border-r pr-2 mr-2'>
-                        {/* 🌟 PASSING applyFormatting */}
                         <ToolbarCombobox 
                             options={FONT_FAMILIES} 
                             placeholder="Font" 
                             command="fontName" 
                             applyFormatting={applyFormatting}
                         />
-                        {/* 🌟 PASSING applyFormatting */}
                         <ToolbarCombobox 
                             options={FONT_SIZES} 
                             placeholder="Size" 
@@ -348,7 +332,7 @@ const RichTextEditor = ({ name, placeholder }: { name: string, placeholder: stri
 // --- End Rich Text Editor Component ---
 
 
-// --- Course Creation Page (Unchanged) ---
+// --- Course Creation Page (FIXED) ---
 export default function CreateCoursePage() {
   const router = useRouter() 
   const [publishOption, setPublishOption] = useState<'draft' | 'publish' | 'schedule'>('draft')
@@ -358,7 +342,8 @@ export default function CreateCoursePage() {
     progress: number;
     url: string | null;
     error: string | null;
-  }>({ file: null, progress: 0, url: null, error: null });
+    cloudinaryUrl: string | null; 
+  }>({ file: null, progress: 0, url: null, error: null, cloudinaryUrl: null });
 
   const isAuthReady = true;
 
@@ -373,43 +358,129 @@ export default function CreateCoursePage() {
     
     setVideoUploadState({ 
         file, 
-        progress: 100,
+        progress: 0, 
         url: localURL, 
-        error: null 
+        error: null,
+        cloudinaryUrl: null
     });
-    toast.success("Video file selected and ready for submission.");
   };
 
-  const handleSubmit = async (formData: FormData) => {
+  // 🚨 FIXED: Updated handleSubmit to manage the direct upload flow
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.currentTarget);
     
     if (!videoUploadState.file) {
         toast.error("Please select a course video file.");
         return;
     }
 
-    formData.append('videoFile', videoUploadState.file);
-    formData.delete('videoUrl'); 
-    formData.append('statusChoice', publishOption);
-    
-    if (publishOption === 'schedule' && !formData.get('scheduledDate')) {
-        toast.error("Please select a scheduled date.");
-        return;
-    }
-    
-    const result = await createCourse(formData) 
-    
-    if (result.success) {
-      toast.success(result.message)
-      router.push('/teacher/courses')
-    } else {
-      toast.error(result.message)
+    const fileToUpload = videoUploadState.file;
+    const toastId = 'video-upload';
+
+    try {
+        // -----------------------------------------------------
+        // STEP 1: Get secure signature from the Vercel Server Action
+        // -----------------------------------------------------
+        toast.loading("Preparing video upload...", { id: toastId });
+        
+        // Use a clean, consistent file name for the server.
+        const cleanFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
+        
+        const signatureResult = await getSignedUploadSignature(cleanFileName);
+
+        if (!signatureResult.success) {
+            toast.dismiss(toastId);
+            toast.error(signatureResult.error || "Failed to prepare video upload. Check server logs.");
+            return;
+        }
+
+        // The public_id returned here now includes the folder name, which is correct
+        const { timestamp, public_id, signature, cloudName, apiKey } = signatureResult;
+        
+        // -----------------------------------------------------
+        // STEP 2: Client uploads the large file DIRECTLY to Cloudinary
+        // -----------------------------------------------------
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
+        
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', fileToUpload);
+        uploadFormData.append('api_key', apiKey as string);
+        uploadFormData.append('timestamp', timestamp.toString());
+        
+        // 🚨 CRITICAL: Use the exact public_id returned by the server, which includes the folder name
+        uploadFormData.append('public_id', public_id); 
+        
+        uploadFormData.append('signature', signature);
+        // 🚨 CRITICAL: These MUST match the options passed to api_sign_request on the server
+        uploadFormData.append('folder', 'course_videos'); 
+        uploadFormData.append('tags', 'nextjs-course-video'); 
+        
+        // NOTE: We don't need to send 'resource_type' or 'max_bytes' because they are only needed for the signing process on the server, not the upload post request itself.
+
+        toast.loading("Uploading video (this may take a minute)...", { id: toastId });
+        
+        const uploadResponse = await fetch(uploadUrl, {
+            method: 'POST',
+            body: uploadFormData,
+        });
+
+        const uploadData = await uploadResponse.json();
+        
+        if (!uploadResponse.ok || uploadData.error) {
+            toast.dismiss(toastId);
+            toast.error(`Video upload failed: ${uploadData.error.message || 'Unknown error'}`);
+            setVideoUploadState(prev => ({ ...prev, error: `Cloudinary error: ${uploadData.error.message || 'Check network.'}` }));
+            return;
+        }
+
+        const finalVideoUrl = uploadData.secure_url; 
+        toast.success("Video uploaded successfully!", { id: toastId });
+        
+        // Update state with the final URL for potential re-submission
+        setVideoUploadState(prev => ({ 
+            ...prev, 
+            cloudinaryUrl: finalVideoUrl,
+            progress: 100 
+        }));
+
+
+        // -----------------------------------------------------
+        // STEP 3: Submit the small form data with the final URL to your Server Action
+        // -----------------------------------------------------
+        
+        formData.append('videoUrl', finalVideoUrl); 
+        formData.delete('videoFile'); 
+        
+        formData.append('statusChoice', publishOption);
+        
+        if (publishOption === 'schedule' && !formData.get('scheduledDate')) {
+            toast.error("Please select a scheduled date.");
+            return;
+        }
+        
+        // Now call the lightweight createCourse action
+        const result = await createCourse(formData); 
+        
+        if (result.success) {
+            toast.success(result.message);
+            router.push('/teacher/courses');
+        } else {
+            toast.error(result.message);
+        }
+
+    } catch (error) {
+        toast.dismiss(toastId);
+        toast.error("An unexpected error occurred during submission.");
+        console.error("Full submission error:", error);
     }
   }
 
   const VideoUploadArea = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { file, progress, url, error } = videoUploadState;
-    const isReady = file && progress === 100;
+    const { file, progress, url, error, cloudinaryUrl } = videoUploadState;
+    const isReady = file && cloudinaryUrl && progress === 100;
 
     const MAX_FILE_SIZE_MB = 2560; 
     const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -452,7 +523,7 @@ export default function CreateCoursePage() {
             <div className="flex flex-col w-full">
                 <div className="relative w-full h-auto rounded-lg overflow-hidden bg-black mb-4">
                     <video 
-                        src={url} 
+                        src={url} // Use local URL for preview
                         controls 
                         className="w-full max-h-[300px] object-contain"
                         aria-label={`Preview of ${file.name}`}
@@ -463,7 +534,7 @@ export default function CreateCoursePage() {
                 <div className="flex justify-between items-center px-2">
                     <div className='flex items-center text-green-600 space-x-2'>
                         <CheckCircle className="h-5 w-5" />
-                        <p className="text-sm font-semibold truncate max-w-[200px]">{file.name} (Ready to upload)</p>
+                        <p className="text-sm font-semibold truncate max-w-[200px]">{file.name} (Ready for submission)</p>
                     </div>
                     <Button 
                         type="button" 
@@ -474,6 +545,24 @@ export default function CreateCoursePage() {
                         Replace Video
                     </Button>
                 </div>
+            </div>
+        );
+    } else if (file && !cloudinaryUrl) {
+        // State for "File selected, upload pending/in progress"
+        content = (
+            <div className="flex flex-col items-center text-amber-600 p-6">
+                <Video className="h-8 w-8 mb-2" />
+                <p className="text-sm font-medium">File Selected</p>
+                <p className="text-xs text-center text-amber-500 mt-1">{file.name}</p>
+                <p className="text-xs text-gray-500 mt-1">Click the final submit button to upload to Cloudinary.</p>
+                <Button 
+                    type="button" 
+                    variant="link" 
+                    onClick={handleClick} 
+                    className="mt-2 text-indigo-600 p-0 h-auto"
+                >
+                    Replace Video
+                </Button>
             </div>
         );
     } else if (error) {
@@ -515,7 +604,7 @@ export default function CreateCoursePage() {
             className={`border-2 border-dashed ${error ? 'border-red-400 bg-red-50/50' : isReady ? 'border-green-400' : 'border-gray-300'} rounded-lg p-4 transition-colors bg-white/70 flex justify-center items-center ${isReady ? 'min-h-auto' : 'min-h-[200px]'} cursor-pointer `}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            onClick={!isReady && !error ? handleClick : undefined}
+            onClick={!isReady && !error && !file ? handleClick : undefined} // Prevent click if file is selected but upload not done
         >
             <input 
                 ref={fileInputRef}
@@ -537,7 +626,7 @@ export default function CreateCoursePage() {
       <h1 className="text-3xl font-bold text-primary">Create New Course</h1>
       
       {isAuthReady ? (
-      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(new FormData(e.currentTarget)); }} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8">
         
         <Card className="shadow-lg">
           <CardHeader>
@@ -635,7 +724,7 @@ export default function CreateCoursePage() {
         <Button 
             type="submit" 
             className="w-full" 
-            disabled={!videoUploadState.file}
+            disabled={!videoUploadState.file} 
         >
           {publishOption === 'draft' ? 'Save Draft' :
             publishOption === 'publish' ? 'Publish Course' :
