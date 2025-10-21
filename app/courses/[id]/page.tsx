@@ -167,7 +167,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
         <p className="text-gray-700 whitespace-pre-wrap">{course.description}</p>
       </div>
 
-      {/* Notes Section */}
+      {/* Notes Section - The content is now responsive and uses the full width of the main container */}
       {course.notes && (
         <div className="space-y-4">
           <h2 className="text-xl md:text-2xl font-semibold border-b pb-2 flex items-center">
@@ -175,8 +175,9 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
           </h2>
           <Card>
             <CardContent 
-                className="p-4 md:p-6 bg-gray-50" 
-                // Using dangerouslySetInnerHTML to render the rich text HTML content (Unchanged)
+                // 🌟 FIX: Ensured it uses the full width of the Card and has responsive padding.
+                className="p-4 md:p-6 bg-gray-50 w-full" 
+                // Using dangerouslySetInnerHTML to render the rich text HTML content
                 dangerouslySetInnerHTML={{ __html: course.notes }} 
             />
           </Card>
