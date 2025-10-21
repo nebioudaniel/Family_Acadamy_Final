@@ -167,20 +167,17 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
         <p className="text-gray-700 whitespace-pre-wrap">{course.description}</p>
       </div>
 
-      {/* Notes Section - The content is now responsive and uses the full width of the main container */}
+      {/* Notes Section - Removed the Card component to eliminate the box/border */}
       {course.notes && (
         <div className="space-y-4">
           <h2 className="text-xl md:text-2xl font-semibold border-b pb-2 flex items-center">
             <FileText className="h-5 w-5 mr-2 text-green-600" /> Course Notes
           </h2>
-          <Card>
-            <CardContent 
-                // 🌟 FIX: Ensured it uses the full width of the Card and has responsive padding.
-                className="p-4 md:p-6 bg-gray-50 w-full" 
-                // Using dangerouslySetInnerHTML to render the rich text HTML content
-                dangerouslySetInnerHTML={{ __html: course.notes }} 
-            />
-          </Card>
+          {/* 🌟 FIX: Replaced Card/CardContent with a simple div */}
+          <div 
+              className="p-4 md:p-6  w-full" 
+              dangerouslySetInnerHTML={{ __html: course.notes }} 
+          />
         </div>
       )}
       

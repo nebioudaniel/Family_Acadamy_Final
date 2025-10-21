@@ -23,8 +23,8 @@ const updateCourseSchema = z.object({
       { message: "Must be a valid URL or internal video path." }
     )
     .optional(),
+  // 🚨 FIX: status field removed from the schema
   notes: z.string().optional(),
-  status: z.enum(["DRAFT", "PUBLISHED", "SCHEDULED"]),
 })
 
 // ======================
@@ -44,7 +44,8 @@ export async function getCourseDetails(courseId: string) {
       description: true,
       videoUrl: true,
       notes: true,
-      status: true,
+      // 🚨 FIX: status is still needed for read-only display or other actions
+      status: true, 
     },
   })
 }
@@ -62,7 +63,8 @@ export async function updateCourse(formData: FormData) {
     return { error: "Validation failed: Check required fields." }
   }
 
-  const { id, title, description, videoUrl, notes, status } = validated.data
+  // 🚨 FIX: Remove 'status' from destructuring since it's removed from the form
+  const { id, title, description, videoUrl, notes } = validated.data
 
   try {
     await prisma.course.update({
@@ -72,8 +74,9 @@ export async function updateCourse(formData: FormData) {
         description,
         videoUrl: videoUrl || null,
         notes,
-        status,
-        publishedAt: status === "PUBLISHED" ? new Date() : undefined,
+        // 🚨 FIX: Remove status and publishedAt update to preserve existing status
+        // status, 
+        // publishedAt: status === "PUBLISHED" ? new Date() : undefined,
       },
     })
 
