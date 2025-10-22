@@ -4,14 +4,13 @@ import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import prisma from "@/lib/prisma"
 import * as bcrypt from "bcryptjs"
-import { z } from "zod" // Import Zod if you use it for validation
+import { z } from "zod"
 
-// Define a schema for the credentials we expect
+// ✅ Zod schema for validating login credentials
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-});
-
+})
 
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
@@ -21,37 +20,31 @@ export const authConfig = {
   providers: [
     Credentials({
       name: "Credentials",
-      // Remove the explicit credentials definition if you rely on Zod/manual validation
-      // or ensure the types match the expected schema.
-      
       async authorize(credentials) {
-        // 1. Validate credentials using Zod
+        // ✅ Validate input using Zod
         const validatedFields = loginSchema.safeParse(credentials)
-
         if (!validatedFields.success) {
-            throw new Error("Invalid email or password format.")
+          throw new Error("Invalid email or password format.")
         }
 
         const { email, password } = validatedFields.data
 
-        // 2. Find user by email (using the correctly typed 'email' string)
+        // ✅ Check if user exists
         const user = await prisma.user.findUnique({
-          where: { email }, // 🎯 CRITICAL FIX: Use the validated and typed 'email' variable
+          where: { email },
         })
 
         if (!user || !user.hashedPassword) {
-          // This error message is slightly misleading, user should have a hashedPassword field, 
-          // not 'password'. I'll assume for now your schema uses 'password'.
-          throw new Error("User not found or invalid credentials")
+          throw new Error("User not found or invalid credentials.")
         }
 
-        // 3. Compare password
+        // ✅ Compare passwords
         const isValid = await bcrypt.compare(password, user.hashedPassword)
         if (!isValid) {
-          throw new Error("Invalid password")
+          throw new Error("Invalid password.")
         }
 
-        // 4. Return user if credentials are valid
+        // ✅ Return safe user object
         return {
           id: user.id,
           name: user.name,
@@ -61,15 +54,25 @@ export const authConfig = {
       },
     }),
   ],
+
   callbacks: {
-    async session({ session, user }) {
-      // 🚨 POTENTIAL BUG: 'user' is only available if not using JWT strategy. 
-      // If you switch to JWT, this will need a 'jwt' callback.
+    // ✅ Store user role in JWT token
+    async jwt({ token, user }) {
       if (user) {
-        session.user.role = (user as any).role // Use 'any' here temporarily if types aren't extended
+        token.role = (user as any).role
+      }
+      return token
+    },
+
+    // ✅ Attach role to session from JWT token
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.role = token.role
       }
       return session
     },
+
+    // ✅ Role-based route protection
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isAdminRoute = nextUrl.pathname.startsWith("/admin")
@@ -78,9 +81,10 @@ export const authConfig = {
       if (isAdminRoute && auth?.user?.role !== "ADMIN") return false
       if (isTeacherRoute && auth?.user?.role !== "TEACHER") return false
 
-      return true
+      return isLoggedIn
     },
   },
 } satisfies NextAuthConfig
 
+// ✅ Export NextAuth utilities
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
