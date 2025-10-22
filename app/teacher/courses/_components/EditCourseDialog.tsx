@@ -105,7 +105,8 @@ export default function EditCourseDialog({ courseId, children }: EditCourseDialo
     if (editor && course && course.notes !== undefined) {
       // We only set it if the content is truly different (to prevent infinite loops)
       if (editor.getHTML() !== course.notes) {
-        editor.commands.setContent(course.notes || '', false);
+       editor.commands.setContent(course.notes || '', { emitUpdate: false });
+
       }
     }
   }, [editor, course]); // Depend on editor and course data
